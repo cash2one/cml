@@ -1,0 +1,109 @@
+1. 站群域名表
+CREATE TABLE IF NOT EXISTS `zhanqun_cml_domain_info` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `domain_en` VARCHAR(255) NOT NULL COMMENT '域名英文',
+  `domain_cn` VARCHAR(255) NOT NULL COMMENT '域名中文',
+  `display_name` VARCHAR(255) NOT NULL COMMENT '页面域名对应的显示名',
+  `query` VARCHAR(255) NOT NULL COMMENT '默认查询词',
+  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `status` INT(11) NOT NULL COMMENT '状态. 0为正常',
+  KEY `status` (`status`),
+  UNIQUE KEY `domain_en` (`domain_en`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='zhanqun_cml_domain_info';
+
+2. 站群配置表
+CREATE TABLE IF NOT EXISTS `zhanqun_cml_conf_online` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `domain_id` INT(11) NOT NULL COMMENT '域名id',
+  `domain_en` VARCHAR(255) NOT NULL COMMENT '域名英文',
+  `version` VARCHAR(255) NOT NULL COMMENT '配置版本',
+  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `owner` INT(11) NOT NULL COMMENT '所有者id',
+  `status` INT(11) NOT NULL COMMENT '状态. 0为正常',
+  KEY `status` (`status`),
+  UNIQUE KEY `version_domain` (`version`,`domain_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='zhanqun_cml_conf_online';
+
+3. 站群账号
+CREATE TABLE IF NOT EXISTS `zhanqun_cml_user` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `username` VARCHAR(255) NOT NULL COMMENT '账户名',
+  `password` VARCHAR(255) NOT NULL COMMENT '账号密码',
+  `nickname` VARCHAR(255) NOT NULL COMMENT '账户昵称',
+  `desc` VARCHAR(255) NOT NULL COMMENT '账户描述',
+  `status` INT(11) NOT NULL COMMENT '账号状态。0为正常',
+  `authority` INT(11) NOT NULL COMMENT '账号权限',
+  `email` VARCHAR(255) NOT NULL COMMENT '邮箱',
+  KEY `status` (`status`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='zhanqun_cml_user';
+
+4. 配置版本表
+CREATE TABLE `zhanqun_cml_conf_version` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `version` varchar(255) NOT NULL COMMENT '配置版本',
+  `terminal` varchar(255) NOT NULL DEFAULT '' COMMENT '客户端',
+  `page_key` varchar(255) NOT NULL DEFAULT '' COMMENT '页面key',
+  `content` mediumtext NOT NULL COMMENT '内容json',
+  `owner` int(11) NOT NULL COMMENT '所有者id',
+  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `status` int(11) NOT NULL COMMENT '状态. 0为正常',
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`),
+  KEY `owner` (`owner`),
+  KEY `version` (`version`),
+  KEY `terminal` (`terminal`),
+  KEY `page_key` (`page_key`)
+) ENGINE=InnoDB AUTO_INCREMENT=315 DEFAULT CHARSET=utf8 COMMENT='zhanqun_cml_conf_version';
+
+5. 配置详情
+CREATE TABLE `zhanqun_cml_conf_version_detail` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `version` varchar(255) NOT NULL COMMENT '配置版本',
+  `terminal` varchar(255) NOT NULL COMMENT 'pc/m',
+  `page_key` varchar(255) NOT NULL COMMENT '页面key',
+  `module_key` varchar(255) NOT NULL COMMENT '模板key',
+  `conf_key` varchar(255) NOT NULL COMMENT '配置key',
+  `content` mediumtext NOT NULL COMMENT '内容json',
+  `owner` int(11) NOT NULL COMMENT '所有者id',
+  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `status` int(11) NOT NULL COMMENT '状态. 0为正常',
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`),
+  KEY `version` (`version`),
+  KEY `terminal` (`terminal`),
+  KEY `page_key` (`page_key`),
+  KEY `module_key` (`module_key`),
+  KEY `conf_key` (`conf_key`),
+  KEY `owner` (`owner`)
+) ENGINE=InnoDB AUTO_INCREMENT=1315 DEFAULT CHARSET=utf8 COMMENT='zhanqun_cml_conf_version_detail';
+
+6. 操作记录
+CREATE TABLE IF NOT EXISTS `zhanqun_cml_user_action` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `userid` INT(11) NOT NULL COMMENT '操作者id',
+  `content` text NOT NULL COMMENT '操作内容',
+  `update_time` datetime NOT NULL COMMENT '更新时间',
+  `status` INT(11) NOT NULL COMMENT '状态. 0为正常',
+  KEY `status` (`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='zhanqun_cml_user_action';
+
+7. 模板表
+CREATE TABLE IF NOT EXISTS `zhanqun_cml_module` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `module_key` VARCHAR(255) NOT NULL COMMENT '模板key',
+  `module_conf` MediumText NOT NULL COMMENT '模板配置json，默认版本',
+  `desc` VARCHAR(255) NOT NULL COMMENT '模板描述',
+  `status` INT(11) NOT NULL COMMENT '状态. 0为正常',
+  KEY `status` (`status`),
+  UNIQUE KEY `module_key` (`module_key`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='zhanqun_cml_module';
+
+# 设计思路
+1、每个站会有一个对应的online配置。
+2、不允许所有已经online化的配置修改。保留所有历史版本方便进行回滚。
+3、对于已配置站点，要进行更新，只能从已有online配置进行复制后进行修改。注意，修改发布后online的配置将会进行版本变更，不会在原来版本的配置上做任何修改。
+4、当一个用户对某个站进行了修改后，该站所对应的online配置的owner将为该用户。同时，在没有该用户授权进行owner变更的情况下，其他用户将不允许对该配置进行任何修改。
+5、每个用户对于自己owner的站点配置可以分配给其他用户。
+6、所有站点默认属于admin。
+7、admin对所有内容具有直接管理权限。可以将站点的owner进行变更，但不能在owner不是自己的情况下进行修改。
